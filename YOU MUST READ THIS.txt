@@ -1,0 +1,1 @@
+Currently the system uses USB drivers which initialize very slowly. Because of this, don't panic when the system doesn't respond on boot, instead wait roughly 20-40 seconds before the system can finally respond properly. This driver load time will be significantly reduced in the future but for now, sorry for the inconvenience.
