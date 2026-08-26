@@ -1,384 +1,172 @@
-# MUDOS_64 BINARY FREEWARE LICENSE
+MUDOS_64 BINARY SOFTWARE LICENSE
+Version 1.0 - 26 August 2026
 
-## Version 1.0 — 26 August 2026
+Copyright (c) 2026 Julian Blaauwiekel. All rights reserved.
 
-Copyright © 2026 Julian Blaauwiekel. All rights reserved.
+This License applies to official binary releases of MUDOS_64 and first-party MUDOS_64 applications distributed with this License.
 
-MUDOS_64 is proprietary software. It is not open-source software, source-available software, public-domain software, or software distributed under a free/open-source software licence.
+MUDOS_64 is proprietary software. It is distributed free of charge in compiled form. It is not open-source software, and no source-code rights are granted by this License.
 
-This licence grants only the limited rights expressly stated below. All rights not expressly granted are reserved by the Copyright Holder.
+## 1. DEFINITIONS
 
----
+"Software" means the compiled MUDOS_64 operating system and first-party MUDOS_64 applications, libraries, resources and documentation distributed with this License.
 
-## 1. Definitions
+"Official Release" means a release of the Software made available by the copyright holder through an official MUDOS_64 distribution channel.
 
-For purposes of this Licence:
+"Unmodified Copy" means a copy of an Official Release in which the Software, copyright notices and this License have not been altered. Repackaging an Unmodified Copy in a different archive or distribution container does not by itself make it modified, provided that the contents remain intact.
 
-**"Copyright Holder"** means Julian Blaauwiekel and any lawful successor or assignee of the applicable copyright.
+"You" means any person or organisation exercising rights granted by this License.
 
-**"MUDOS_64"** means the MUDOS_64 operating system.
+## 2. OWNERSHIP
 
-**"Software"** means the compiled MUDOS_64 operating system and any compiled first-party MUDOS_64 applications, executable files, binary libraries, firmware-independent resources, artwork, icons, fonts, data files, documentation, and other copyrighted material distributed together with or expressly identified by the Copyright Holder as being covered by this Licence.
+The Software is licensed, not sold.
 
-**"Binary Code"** means compiled machine-readable or object-code forms of the Software.
+All copyright and other intellectual-property rights in the Software remain with the copyright holder or, where applicable, the respective third-party rightsholder.
 
-**"Source Code"** means the human-readable or preferred form of the Software for studying, developing, compiling, modifying, maintaining, or creating the Software, including source files, assembly source, headers, linker scripts, build scripts, non-public debugging information, and other corresponding source material.
+No ownership of the Software or its source code is transferred to You. No rights are granted except those expressly stated in this License or those that applicable law gives You independently and does not permit the copyright holder to restrict.
 
-**"Official Release"** means a release of the Software made available by the Copyright Holder through an official MUDOS_64 distribution location.
+## 3. PERMITTED USE
 
-**"Unmodified Copy"** means a copy whose Software content is identical to the applicable Official Release. Changing only an outer archive, compression format, filename, transport container, storage medium, or delivery mechanism does not constitute modification provided that the contents of the Software itself, this Licence, copyright notices, attribution notices, and other accompanying legal notices remain complete and unmodified.
+Subject to this License, You may:
 
-**"Redistribute"** means to reproduce, upload, mirror, transmit, provide, or otherwise make copies of the Software available to another person.
+a. download and possess lawful copies of the Software;
 
-**"Modification"** includes alteration, patching, binary rewriting, replacement, addition, removal, translation, adaptation, instrumentation intended to alter the Software, modification of executable instructions or embedded resources, or creation of a derivative version of the Software.
+b. install and run the Software on any number of computers or virtual machines;
 
-**"You"** means any natural or legal person exercising rights under this Licence.
+c. use the Software for personal, educational, research, professional or commercial purposes; and
 
----
+d. make copies reasonably necessary for the permitted use of the Software.
 
-## 2. Ownership and Reservation of Rights
+Use of the Software is free of charge.
 
-The Software is licensed, not sold or transferred.
+## 4. REDISTRIBUTION
 
-Except for rights expressly granted by this Licence, the Copyright Holder retains all applicable copyright and other intellectual-property rights in the Software.
+You may copy and redistribute Unmodified Copies of Official Releases of the Software, provided that:
 
-Possession, downloading, installation, execution, or redistribution of the Software does not transfer ownership of the Software or its intellectual property.
+a. the Software remains unmodified;
 
-No ownership interest in the Source Code is transferred or licensed.
+b. this License is included in full;
 
-The Source Code is not distributed under this Licence and no right to obtain, demand, access, possess, reproduce, publish, disclose, distribute, sublicense, modify, or create derivative works from the Source Code is granted.
+c. all copyright, attribution and proprietary notices remain intact;
 
-No licence is granted by implication, estoppel, exhaustion beyond what is required by applicable law, or otherwise except as expressly provided herein or required by mandatory law.
+d. You do not claim authorship or ownership of MUDOS_64;
 
----
+e. You do not represent Yourself, Your distribution, website, repository or service as official, endorsed, sponsored or approved by MUDOS_64 or the copyright holder unless such authorisation has been given in writing; and
 
-## 3. Grant of Licence for Use
+f. You do not impose a licence fee, purchase price, subscription fee or other charge specifically for the Software itself.
 
-Subject to this Licence, the Copyright Holder grants You a non-exclusive, worldwide, royalty-free licence to:
+Reasonable charges that relate only to physical media, postage, bandwidth, hosting or another genuine distribution cost are permitted.
 
-1. obtain lawful copies of the Software;
-2. install the Software;
-3. execute and use the Software;
-4. retain copies reasonably required for such permitted use; and
-5. make any backup copy whose creation is permitted or required by applicable mandatory law.
+Redistribution under this section does not make You a sublicensor. Recipients receive their rights directly under this License.
 
-You may use the Software for private, educational, research, professional, organisational, or commercial purposes.
+## 5. RESTRICTIONS
 
-This permission to use the Software does not grant permission to sell, modify, reverse engineer, derive Source Code from, create derivative versions of, or otherwise exploit the Software except where separately and expressly permitted by this Licence or by mandatory applicable law.
+Except where applicable law gives You a right that cannot validly be excluded or restricted, You may not:
 
----
+a. modify, patch, translate, adapt or alter the Software;
 
-## 4. Redistribution Permission
+b. distribute a modified or derivative version of the Software;
 
-You may redistribute Unmodified Copies of Official Releases of the Software, subject to every condition in this Section.
+c. remove, alter or obscure copyright, attribution, licence or proprietary notices;
 
-Redistribution is permitted only where:
+d. sell, rent, lease, sublicense or otherwise charge for a licence to the Software;
 
-1. the Software itself remains unmodified;
-2. all files forming the distributed Official Release remain intact except where the Copyright Holder's Official Release itself designates components as independently distributable;
-3. this Licence is included in full and without modification;
-4. all copyright, authorship, attribution, proprietary-rights, and legal notices remain intact;
-5. the Software is clearly identified as MUDOS_64 and is not represented as having been created by the redistributor;
-6. the redistributor does not claim authorship, ownership, sponsorship, endorsement, partnership, or official status that has not actually been granted by the Copyright Holder;
-7. no modified, patched, translated, recompiled, reconstructed, or derivative version is represented or distributed as MUDOS_64;
-8. access to the Software itself is provided free of any software purchase price, licence fee, subscription fee, mandatory donation, or other consideration imposed specifically in exchange for the Software; and
-9. the recipient remains subject directly to this Licence and receives no additional rights from the redistributor.
+e. reverse engineer, decompile, disassemble or otherwise attempt to reconstruct source code or other protected implementation material from the Software;
 
-Reasonable charges solely for physical media, postage, shipping, data transmission, or another genuine distribution cost are permitted provided that those charges are not represented as payment for ownership or a licence to MUDOS_64.
+f. publish or distribute source code reconstructed from the Software without the copyright holder's permission;
 
-A redistributor does not become a sublicensor. Every permitted recipient receives the applicable rights directly from the Copyright Holder under this Licence.
+g. use the MUDOS_64 name, logo or other branding in a way that falsely suggests official status, endorsement or affiliation; or
 
----
+h. assist another person in doing an act that this License prohibits.
 
-## 5. No Modification or Derivative Works
+Nothing in this License prohibits independently created software merely because it performs similar functions or implements ideas, principles or interfaces that are not protected by copyright.
 
-Except to the minimum extent that an applicable right cannot lawfully be excluded, You may not:
+## 6. SOURCE CODE
 
-1. modify the Software;
-2. patch or alter executable code;
-3. modify, remove, replace, or insert executable instructions;
-4. modify or replace embedded first-party resources;
-5. alter the behaviour of a distributed binary through permanent binary modification;
-6. translate or adapt copyrighted portions of the Software;
-7. create, distribute, or publish a modified version of the Software;
-8. create or distribute a derivative work based upon copyrighted expression contained in the Software;
-9. combine modified portions of the Software into another software product;
-10. recompile or rebuild the Software from recovered or reconstructed implementation material; or
-11. distribute patches whose purpose or effect is to transform an Official Release into an unauthorised modified version.
+The source code of MUDOS_64 is not distributed or licensed under this License.
 
-Nothing in this Section purports to prohibit independently created software merely because it performs similar functions where applicable intellectual-property law does not reserve those functions to the Copyright Holder.
+Distribution of compiled binaries does not grant any right to obtain, demand, publish, reproduce, modify or redistribute the corresponding source code.
 
----
+If source code or other non-public implementation material is obtained without authorisation, this License does not grant permission to use or distribute it.
 
-## 6. Reverse Engineering and Source-Code Reconstruction
+## 7. RIGHTS PRESERVED BY LAW
 
-To the maximum extent permitted by applicable law, and except solely where an applicable statutory right cannot lawfully be waived or restricted, You may not attempt to derive or reconstruct the Source Code or copyrighted implementation of the Software.
+Nothing in this License excludes or restricts a right that applicable law provides cannot be excluded or restricted by agreement.
 
-Prohibited conduct includes, where legally restrictable:
+Where applicable, this includes statutory rights relating to:
 
-1. reverse engineering;
-2. decompilation;
-3. disassembly;
-4. translation of Binary Code into Source Code or another higher-level representation;
-5. automated decompilation or source reconstruction;
-6. reconstruction of functions, structures, source files, control flow, internal data structures, symbols, types, comments, variable names, or other implementation material from Binary Code;
-7. extraction or reconstruction of substantial copyrighted implementation material from memory images, executable files, debugging information, traces, or other runtime material;
-8. use of artificial-intelligence, machine-learning, automated-analysis, decompiler, disassembler, symbolic-execution, binary-lifting, or similar systems for the purpose of reconstructing prohibited Source Code or copyrighted implementation material;
-9. publishing or distributing unauthorised reconstructed Source Code;
-10. publishing or distributing substantial portions of decompiled or disassembled copyrighted expression; or
-11. knowingly assisting another person in conduct prohibited by this Section.
+a. acts necessary for lawful use of a computer program;
 
-This Section does not restrict an act to the extent that the Copyright Holder is prohibited by applicable law from restricting that act.
+b. making a backup copy where necessary for lawful use;
 
-Any statutory permission for decompilation or similar conduct shall extend no further than the scope and purpose required by the applicable law.
+c. observing, studying or testing the functioning of a program while carrying out acts the user is entitled to perform; and
 
-Information lawfully obtained under a statutory interoperability exception may not be used beyond the purposes for which applicable law permits its use, including where applicable to create, produce, or market a program substantially similar in copyrighted expression to MUDOS_64 or otherwise infringe copyright.
+d. reproduction or translation of code only where and to the extent legally permitted for obtaining information indispensable to the interoperability of an independently created computer program.
 
----
+Any information obtained under a statutory interoperability exception may be used only for the purposes and within the limits permitted by the applicable law.
 
-## 7. Mandatory Statutory Rights
+This section does not create any right beyond the rights provided by applicable law.
 
-Nothing in this Licence excludes, limits, or conditions a right where applicable law expressly provides that such right cannot be excluded, limited, or conditioned by agreement.
+## 8. THIRD-PARTY COMPONENTS
 
-This includes, where and to the extent applicable, statutory rights concerning:
+The Software may include components owned by third parties and distributed under separate licence terms.
 
-1. acts necessary for lawful use of a computer program;
-2. necessary backup copies;
-3. observation, study, or testing of the functioning of a computer program while performing acts the user is entitled to perform; and
-4. reproduction or translation of code that is indispensable for obtaining information necessary to achieve interoperability of an independently created computer program, but only where all statutory conditions for that exception are satisfied.
+A third-party licence governs the relevant third-party component to the extent required by that licence. Nothing in this License is intended to remove or restrict rights granted directly by a third-party rightsholder.
 
-The existence of this Section does not grant any right broader than the right independently provided by applicable mandatory law.
+Required third-party copyright and licence notices must be preserved when the Software is redistributed.
 
-All conduct outside the mandatory statutory exception remains subject to the restrictions of this Licence.
+## 9. TRADEMARKS AND PROJECT IDENTITY
 
----
+This License does not grant any trademark, trade-name, logo or branding rights, except the limited right to use the name "MUDOS_64" truthfully to identify the genuine Software or to describe compatibility with it.
 
-## 8. No Source-Code Licence
+You may not use MUDOS_64 branding in a manner likely to mislead others about the origin, approval or official status of a product, service, distribution or project.
 
-Redistribution of Binary Code does not constitute publication, disclosure, dedication, licensing, or abandonment of the corresponding Source Code.
+## 10. TERMINATION
 
-No permission is granted to:
+The permissions granted by this License terminate automatically if You materially breach a condition of this License and do not have an independent legal right to perform the relevant act.
 
-1. request or require disclosure of Source Code from the Copyright Holder;
-2. distribute any Source Code obtained without authorisation;
-3. publish leaked, stolen, unlawfully obtained, or unauthorised Source Code;
-4. reproduce or modify such unauthorised Source Code;
-5. incorporate such unauthorised Source Code into another work; or
-6. knowingly facilitate distribution of such unauthorised Source Code.
+After termination, You must stop any copying, modification, distribution or other activity that requires permission from the copyright holder.
 
-The fact that information can technically be extracted from Binary Code does not constitute permission to extract, reproduce, or distribute copyrighted implementation material.
+Termination does not affect rights that applicable law gives You independently of this License. It also does not terminate the rights of recipients who previously received an Unmodified Copy in compliance with this License and who remain in compliance with it.
 
----
+The copyright holder may reinstate terminated rights in writing.
 
-## 9. Copyright Notices and Attribution
+## 11. DISCLAIMER OF WARRANTY
 
-You may not remove, obscure, alter, falsify, or replace a copyright notice, authorship notice, attribution, licence notice, proprietary notice, or other rights-management information included with the Software.
+To the fullest extent permitted by applicable law, the Software is provided "as is" and without warranties of any kind, whether express, implied or statutory.
 
-You may not claim authorship of MUDOS_64 or of copyrighted first-party components of MUDOS_64.
+The copyright holder does not warrant that the Software will be error-free, uninterrupted, secure, compatible with particular hardware or software, or suitable for any particular purpose.
 
-Permitted redistribution must preserve the Copyright Holder's attribution.
+Nothing in this section excludes a warranty, remedy or other right that applicable law does not permit to be excluded.
 
----
+## 12. LIMITATION OF LIABILITY
 
-## 10. Names, Logos and Marks
+To the fullest extent permitted by applicable law, the copyright holder is not liable for indirect, incidental, special, consequential or similar loss or damage arising from the Software or its use, inability to use, failure or distribution.
 
-This Licence grants no trademark, trade-name, logo, branding, or similar right except the limited right necessary to truthfully identify an unmodified copy as MUDOS_64.
+This includes, where legally excludable, loss of data, loss of profits, business interruption, hardware damage, software damage and recovery costs.
 
-You may use the name "MUDOS_64" solely as reasonably necessary to identify the genuine Software, describe compatibility, or refer factually to the project.
+Nothing in this License excludes or limits liability where applicable law does not permit that liability to be excluded or limited.
 
-You may not use the MUDOS_64 name, logo, visual identity, or other source-identifying material in a manner that falsely implies that an unauthorised product, modified version, organisation, website, repository, service, or person is official, endorsed, sponsored, approved, or affiliated with the Copyright Holder.
+## 13. GOVERNING LAW
 
-Nothing in this Section claims rights that do not exist under applicable law.
+To the extent legally permitted, this License is governed by the laws of the Netherlands.
 
----
+This choice of law does not deprive a consumer or other protected person of mandatory rights that applicable law does not permit to be waived.
 
-## 11. No Sublicensing
+Subject to mandatory rules of jurisdiction, disputes concerning this License may be brought before a competent court in the Netherlands.
 
-You may not sublicense the Software or purport to grant another person rights in the Software on behalf of the Copyright Holder.
+## 14. SEVERABILITY
 
-Permitted redistribution merely supplies another person with an Unmodified Copy to which this Licence may independently apply.
+If any provision of this License is held invalid or unenforceable, that provision shall apply only to the extent that it can lawfully be enforced, and the remaining provisions shall remain in effect.
 
-You may not impose terms upon a recipient that purport to replace, remove, diminish, or contradict this Licence with respect to MUDOS_64.
+The invalidity of one restriction does not create any licence or permission beyond what this License expressly grants or what applicable law independently provides.
 
----
+## 15. ENTIRE LICENSE
 
-## 12. No Sale of the Software
+This document states the licence granted by the copyright holder for the Software covered by it.
 
-MUDOS_64 is distributed as freeware.
+Repository descriptions, README files, documentation, advertisements, discussions and other informal statements do not expand this License unless they expressly state that they grant additional rights on behalf of the copyright holder.
 
-You may not sell, rent, lease, license for payment, or otherwise demand consideration specifically for access to or use of the Software.
-
-This restriction does not prohibit ordinary commercial use of the Software by a lawful user and does not prohibit reasonable charges solely attributable to physical media, postage, shipping, hosting, or data transmission as permitted by Section 4.
-
----
-
-## 13. Third-Party Materials
-
-This Licence applies only to material for which the Copyright Holder has authority to grant the rights stated herein.
-
-A distribution of MUDOS_64 may contain third-party software, libraries, firmware, fonts, data, documentation, or other material governed by separate licence terms.
-
-Where a third-party component is accompanied by a separate copyright notice or licence, that third-party licence governs that component to the extent required by its terms.
-
-Nothing in this Licence reduces, overrides, removes, or attempts to restrict rights granted directly by a third-party copyright holder under an applicable third-party licence.
-
-Likewise, this Licence grants no additional rights in third-party material beyond those which the Copyright Holder is legally entitled to grant.
-
-Redistributors must preserve all third-party licence and attribution notices that are required to accompany the relevant material.
-
----
-
-## 14. Technical Protection and Integrity
-
-Except where applicable law requires otherwise, You may not knowingly circumvent a technical measure implemented specifically to protect copyrighted Software or restricted implementation material where such circumvention is prohibited by applicable law.
-
-Nothing in this Licence independently creates a prohibition on conduct that applicable law expressly permits.
-
----
-
-## 15. Licence Conditions
-
-The permissions to reproduce and redistribute the Software under this Licence are expressly conditional upon compliance with the applicable requirements of this Licence.
-
-Any reproduction, distribution, or creation of a derivative work that requires permission from the Copyright Holder and is performed outside the scope of a licence granted herein is unauthorised.
-
-Where applicable law distinguishes between conditions of a copyright licence and contractual covenants, provisions expressly limiting the scope of the permissions to reproduce, modify, prepare derivative works from, or redistribute the Software are intended to define the scope of the copyright permission granted.
-
----
-
-## 16. Term and Termination
-
-This Licence applies for the duration of the rights licensed hereunder unless terminated as provided below.
-
-Your rights under this Licence automatically terminate if You materially violate a condition governing a right granted under this Licence.
-
-Upon termination, You must cease all acts that require permission from the Copyright Holder and for which You no longer possess such permission.
-
-Termination does not remove rights that applicable law gives You independently of this Licence.
-
-Termination of one person's rights does not terminate the rights of recipients who previously received Unmodified Copies in compliance with this Licence and who themselves remain compliant.
-
-The Copyright Holder may expressly reinstate terminated rights in writing.
-
----
-
-## 17. Individual Releases and Future Licence Versions
-
-The licence accompanying a particular Official Release governs that copy of that release.
-
-The Copyright Holder may distribute future versions of MUDOS_64 under different terms.
-
-A future licence does not retroactively alter rights already granted for an earlier copy unless the parties validly agree otherwise.
-
-You may not unilaterally substitute another licence for this Licence.
-
----
-
-## 18. No Warranty
-
-TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE.
-
-TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE COPYRIGHT HOLDER DISCLAIMS WARRANTIES INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, SATISFACTORY QUALITY, NON-INFRINGEMENT, AVAILABILITY, SECURITY, RELIABILITY, ERROR-FREE OPERATION, AND FITNESS FOR CRITICAL OR SAFETY-RELATED USE.
-
-NO PART OF THIS SECTION EXCLUDES OR LIMITS A WARRANTY, GUARANTEE, REMEDY, OR OTHER RIGHT THAT APPLICABLE LAW DOES NOT PERMIT TO BE EXCLUDED OR LIMITED.
-
----
-
-## 19. Limitation of Liability
-
-TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE COPYRIGHT HOLDER SHALL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, OR CONSEQUENTIAL LOSS OR DAMAGE ARISING FROM OR RELATING TO THE SOFTWARE OR ITS USE, INABILITY TO USE, DISTRIBUTION, FAILURE, OR MALFUNCTION.
-
-THIS INCLUDES, TO THE EXTENT LAWFULLY EXCLUDABLE, LOSS OF DATA, LOSS OF PROFITS, LOSS OF REVENUE, LOSS OF BUSINESS, LOSS OF OPPORTUNITY, INTERRUPTION, HARDWARE DAMAGE, SOFTWARE DAMAGE, OR COSTS OF SUBSTITUTE SYSTEMS OR RECOVERY.
-
-NOTHING IN THIS LICENCE EXCLUDES OR LIMITS LIABILITY TO THE EXTENT THAT SUCH LIABILITY CANNOT LAWFULLY BE EXCLUDED OR LIMITED.
-
----
-
-## 20. Compliance With Applicable Law
-
-You are responsible for using and redistributing the Software in accordance with applicable law.
-
-This Licence does not authorise any act that would otherwise be unlawful.
-
-Conversely, nothing in this Licence is intended to prohibit conduct that applicable mandatory law affirmatively provides cannot be prohibited by agreement.
-
----
-
-## 21. Severability
-
-If a provision of this Licence is held invalid, illegal, unenforceable, or ineffective in a particular jurisdiction, that provision shall be ineffective only to the minimum extent required by applicable law.
-
-The remaining provisions shall continue in effect to the extent legally possible.
-
-Where legally permissible, an invalid or unenforceable provision shall be interpreted as narrowly as necessary to approximate its lawful intended effect rather than expanding the rights granted under this Licence.
-
-Invalidity of a restriction does not create any additional licence to copyright or other rights except to the extent required by applicable law.
-
----
-
-## 22. No Waiver
-
-Failure or delay by the Copyright Holder to enforce a provision or right does not, by itself, waive that provision or right.
-
-A waiver concerning one act does not constitute a waiver concerning any other act.
-
----
-
-## 23. No Assignment by Licensee
-
-Except for the redistribution rights expressly granted in Section 4, You may not assign, transfer, or sublicense rights granted to You under this Licence without prior written permission from the Copyright Holder.
-
-Permitted redistribution does not constitute an assignment of Your licence.
-
----
-
-## 24. Entire Licence
-
-This document states the permissions granted by the Copyright Holder for the Software covered by it unless the Copyright Holder separately grants additional rights in writing.
-
-Statements in advertisements, repository descriptions, README files, discussions, documentation, or other informal material do not expand this Licence unless they expressly state that they constitute an additional licence grant by the Copyright Holder.
-
----
-
-## 25. Governing Law
-
-To the extent a choice of law is legally effective, this Licence and disputes arising from it shall be governed by the laws of the Netherlands, excluding its choice-of-law rules.
-
-This choice of law does not deprive a consumer or any other protected person of mandatory protections that applicable law provides cannot be waived through a choice-of-law clause.
-
-Nothing in this Section overrides mandatory rules concerning applicable law or jurisdiction.
-
----
-
-## 26. Jurisdiction
-
-Subject to mandatory rules of jurisdiction, disputes arising from this Licence may be submitted to a competent court in the Netherlands.
-
-Nothing in this Section requires a consumer or another protected party to surrender a forum or jurisdictional protection that applicable mandatory law does not permit that party to waive.
-
----
-
-## 27. Acceptance and Scope of Permission
-
-You are not required to accept this Licence merely to possess a copy where applicable law permits that possession without a licence.
-
-However, if You reproduce, redistribute, or otherwise exercise a right for which permission from the Copyright Holder is required and which this Licence grants, You may exercise that permission only within the scope and conditions stated herein.
-
-If You do not agree to those conditions, this Licence grants You no permission to perform those otherwise restricted acts.
-
-Rights arising independently under mandatory applicable law remain unaffected.
-
----
-
-## 28. Reservation of All Other Rights
-
-No rights are granted except those expressly stated in this Licence or those that applicable law provides independently and does not permit the Copyright Holder to restrict.
-
-In particular, publication of compiled MUDOS_64 releases does not place the Software or Source Code into the public domain and does not constitute an open-source release.
+The copyright holder may distribute future releases of MUDOS_64 under different licence terms. A later licence does not retroactively alter the terms applicable to an earlier copy unless the parties validly agree otherwise.
 
 ALL RIGHTS NOT EXPRESSLY GRANTED ARE RESERVED.
-
----
-
-MUDOS_64 Binary Freeware License v1.0
-Copyright © 2026 Julian Blaauwiekel. All rights reserved.
