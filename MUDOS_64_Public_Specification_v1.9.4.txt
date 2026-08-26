@@ -1,0 +1,869 @@
+MUDOS_64 PUBLIC SPECIFICATION
+Public-safe architecture and capability specification
+Specification snapshot: MUDOS_64 v1.9.4
+
+Copyright (c) 2026 Julian Blaauwiekel. All rights reserved.
+
+PUBLICATION NOTE
+================
+
+This document is the public-facing specification for MUDOS_64. It intentionally describes externally meaningful behavior, major architectural choices, supported facilities, compatibility boundaries, security properties, application formats, hardware targets and design goals while omitting private implementation details that are not required to understand, use or develop software for the system.
+
+The private engineering specification is substantially more detailed. This public specification deliberately does not publish source-code-equivalent structure layouts, private algorithms, internal lock ordering, exact scheduler equations, private table sizes, internal queue depths, detailed compression coding procedures, low-level DMA construction, private memory-reclamation heuristics, private journaling sequences, raw kernel data structures, implementation-only constants, complete syscall-number maps, internal GPU command translation, or other details whose publication would materially reduce the work required to reproduce the implementation or unnecessarily expose security-sensitive internals.
+
+The public MUDOS_64 API/ABI header is a separate software-development interface and may expose exact application-facing structures and constants where binary compatibility requires them. Public ABI material is intentionally public; private kernel implementation material is not.
+
+1. PROJECT IDENTITY AND DESIGN PHILOSOPHY
+=========================================
+
+MUDOS_64 stands for Modern Ultra Deterministic Operating System based on 64-bit. It is an independently designed x86-64 operating system built primarily in C and Assembly. The project started on 4 June 2026 and is developed as a compact, integrated system rather than as a collection of independently replaceable operating-system layers.
+
+The system is UI-centric. The desktop environment is an integrated part of the operating system and is treated as a first-class system facility rather than as an optional shell placed on top of a general-purpose UNIX-like base. MUDOS_64 uses a fully monolithic kernel architecture while internally separating work into independently scheduled system activities so that subsystems do not need to execute as one giant serial loop.
+
+The central design question is: what is the minimum implementation required to provide the intended capability correctly? The project intentionally avoids carrying compatibility layers, historical interfaces, duplicated abstractions and optional mechanisms solely because other operating systems traditionally have them. Data structures and hot paths are designed around bounded, constant-time or logarithmic behavior where practical, while correctness is preferred over forcing every operation into an artificial complexity target.
+
+Primary goals include:
+
+- very high stability, uptime consistency and deterministic behavior;
+- preventive security rather than dependence on behavioral malware detection;
+- high throughput with controlled interactive latency;
+- low CPU and memory overhead;
+- high data integrity and crash consistency;
+- low write amplification;
+- compact persistent storage usage;
+- strong process and DMA isolation;
+- transparent and understandable system behavior;
+- minimal privacy-invasive background functionality;
+- low subsystem complexity relative to the capability provided;
+- modern hardware support without a large legacy-compatibility burden;
+- modular Ring-3 applications that can be replaced without recompiling the kernel.
+
+Architectural inspirations include Windows NT 4.0, Windows 11, FreeRTOS, MS-DOS and Linux. Inspiration does not imply API, ABI, source or binary compatibility with those systems.
+
+MUDOS_64 does not natively implement POSIX or a UNIX kernel ABI. Software that assumes POSIX must be adapted at Ring 3 or use a separately provided compatibility layer if one exists. The native operating-system boundary remains the MUDOS_64 API/ABI.
+
+2. PLATFORM SCOPE
+=================
+
+MUDOS_64 currently targets:
+
+- x86-64 only;
+- UEFI systems only;
+- multicore systems;
+- single-user operation;
+- modern to moderately modern PC hardware;
+- desktop, workstation and server-class PCs as the primary target.
+
+There is no 32-bit execution environment. The system boots directly into its graphical environment and does not require a conventional multi-user login/account profile. The monolithic kernel is itself the core system bootstrap environment; there is no separate UNIX-style init process. Older hardware and laptops are not deliberately rejected merely because of their age or form factor, but they are not the primary compatibility target and are not guaranteed to work unless their hardware is supported.
+
+The system boots through BOOTX64.EFI, obtains the required platform information from UEFI, exits UEFI boot services correctly through ExitBootServices(), and thereafter does not depend on firmware boot services as an operating-system runtime. UEFI GOP is available as a graphics fallback when a supported native GPU path is unavailable.
+
+MUDOS_64 initializes its own memory management, interrupt handling, ACPI/platform discovery, timing, CPU bring-up, scheduling, security hardening, drivers and desktop environment. The system is tickless during normal operation and uses hardware deadline/event mechanisms rather than a permanently periodic scheduler tick wherever supported.
+
+The default desktop target is 1080p with scaling based on the attached display. The current UI is designed around 16:9, 4:3 and 1:1 display proportions.
+
+3. KERNEL AND PRIVILEGE MODEL
+=============================
+
+All kernel and core system execution that requires full hardware authority runs in x86-64 Ring 0. Ordinary executable applications and trusted system-extension applications execute in Ring 3 with separate process address spaces.
+
+MUDOS_64 defines two principal Ring-3 executable trust classes:
+
+.MEXE
+  The normal application format. A .MEXE process executes in Ring 3 and is subject to the normal application permission model. It cannot obtain kernel pointers, page tables, unrestricted physical memory, raw DMA access, arbitrary I/O-port access, arbitrary MSR access, direct interrupt ownership, or unrestricted cross-process memory access through the normal ABI.
+
+.ROOT
+  The trusted system-extension format. A .ROOT process still executes in Ring 3 and remains subject to hardware memory isolation, but it receives broader system-management and filesystem authority through validated kernel interfaces. .ROOT is intended for trusted operating-system utilities and infrastructure, not ordinary third-party applications.
+
+.MLIB
+  The native dynamically loadable Ring-3 module/library format. .MLIB modules load into the address space and privilege context of their host process. Loading a library does not elevate privilege. A module loaded by a .MEXE has .MEXE authority; a module loaded by a .ROOT inherits that .ROOT process's authority. Modules use validated executable mappings, relocation/import/export rules, W^X enforcement and native TLS integration.
+
+The kernel validates executable and module metadata before mapping code into a process. Application identity is kernel-controlled rather than trusted from arbitrary executable-supplied metadata. This identity is used by parts of the filesystem permission model and by same-application memory deduplication.
+
+MUDOS_64 is single-user by design. Security boundaries are therefore centered on process privilege, executable trust class, application identity, address-space isolation, file ownership policy, direct-user-action authorization and hardware-enforced DMA isolation rather than on traditional multi-user accounts.
+
+4. PROCESS, THREAD AND SYNCHRONIZATION MODEL
+============================================
+
+Processes have independent virtual address spaces and lifecycle state. Threads are independently schedulable entities owned by a process. Process and thread identifiers may be reused, but public handles contain sufficient generation/instance identity to prevent an old handle from silently referring to a newer object that reused the same numeric PID or TID.
+
+The main thread is semantically significant: termination of the process's main thread terminates the process. Process termination performs structured cleanup of threads, wait registrations, synchronization objects, mappings, modules, filesystem references and other process-owned resources.
+
+Ordinary processes have a bounded number of simultaneously live threads. The core System process is not artificially constrained by that ordinary application limit because some kernel-managed services scale with CPU count.
+
+MUDOS_64 provides native synchronization and asynchronous coordination primitives including:
+
+- mutexes;
+- priority inheritance;
+- manual-reset events;
+- process and thread waiting;
+- IPC messaging;
+- shared-page/shared-memory facilities;
+- unidirectional byte-stream pipes;
+- wait-many / wait-any functionality;
+- process-local completion queues;
+- blocking and non-blocking operation where semantically meaningful.
+
+Mutexes are non-recursive and owned by exact thread identity. Priority inheritance propagates scheduling urgency through contended mutex ownership so a low-priority owner does not indefinitely delay a higher-priority waiter. Kernel-internal spinlocks are used where sleeping is impossible or inappropriate, such as interrupt-sensitive paths; ordinary Ring-3 applications use blocking synchronization rather than spinning on kernel internals.
+
+Blocking is represented explicitly. A blocked thread is not runnable until the subsystem that owns its wait condition publishes completion, failure or cancellation and wakes it. Separate wait reasons exist for sleeping, synchronization, IPC, I/O, process/thread completion, UI, audio, networking, GPU work, pipes and generic wait-many/completion facilities.
+
+Native process completion records preserve exit status and termination reason independently of PID reuse so a parent can safely wait for a child even after the child has left the active process table.
+
+5. NATIVE TLS, TSS AND DYNAMIC MODULE SUPPORT
+=============================================
+
+MUDOS_64 provides native Ring-3 thread-local storage (TLS) suitable for compiler-generated C/C++ thread-local variables and runtime-managed thread state. Each thread receives an isolated TLS area and the kernel restores the correct user TLS base as part of thread context switching.
+
+A separate thread-specific-storage (TSS) key/value facility is provided for language runtimes and libraries that need dynamically allocated per-thread pointers. TSS is process-local and generation-safe so stale keys cannot accidentally refer to newly created keys.
+
+.MLIB modules can participate in the same TLS system. Modules may define TLS data and receive process-local module identity. Per-thread module TLS is created as required rather than forcing every thread to reserve storage for every possible module.
+
+Dynamic modules are explicitly selected by the Ring-3 program/runtime; the kernel does not search a hidden UNIX-style library path. Module imports/exports are validated and module unload is constrained by lifetime/safety requirements so code or data cannot be silently reclaimed while still in legitimate use.
+
+6. CPU SCHEDULING
+=================
+
+MUDOS_64 uses a preemptive, per-CPU, weighted EEVDF-derived scheduler. Scheduling distinguishes two separate concepts:
+
+- proportional CPU-service weight, which controls relative service entitlement;
+- latency class, which controls how aggressively a workload is given short scheduling requests and therefore interactive response opportunities.
+
+Foreground, background/minimized and selected system workloads receive policy appropriate to their role. The compositor, UI, audio and other latency-sensitive system activities can be assigned shorter latency behavior without pretending they are entitled to unlimited CPU throughput.
+
+The scheduler is tickless. It programs deadlines for the next event that actually requires scheduler attention, including scheduling-request expiration, sleep wakeups and other correctness-critical timing events. A CPU with no runnable work may enter an idle state until an interrupt or deadline requires work.
+
+Runnable threads are ordered using deadline/eligibility data structures intended to keep selection scalable as runnable count grows. The private implementation of these structures, equations, thresholds and lock choreography is intentionally omitted from the public specification.
+
+Scheduling preserves service fairness across preemption, blocking and migration. A sleeping or blocked task does not receive an unlimited artificial scheduling bonus when it wakes, and migration between per-CPU scheduler domains preserves normalized service history so moving a task is not itself a reward or punishment.
+
+Priority inheritance integrates with both service weight and latency policy. Deadlock and object-lifetime edge cases are treated as correctness conditions rather than ignored as "unlikely" behavior.
+
+7. HETEROGENEOUS CPU AND TOPOLOGY-AWARE PLACEMENT
+=================================================
+
+MUDOS_64 supports heterogeneous x86-64 processors without hardcoding scheduler policy around marketing labels such as P-core, E-core, Big, Little, Mid or a fixed number of performance classes.
+
+The scheduler consumes a vendor-neutral relative physical-core capacity abstraction. Standardized architectural or firmware capability information is preferred. Vendor-specific discovery may be used below that abstraction when required, but vendor-specific placement policy is not imported into the generic scheduler.
+
+If reliable mutually comparable capacity information cannot be obtained for the complete relevant processor topology, MUDOS_64 deliberately falls back to homogeneous scheduling instead of inventing a hierarchy from an unstable boot-time benchmark.
+
+Placement is also topology-aware. Independent physical cores are preferred before unnecessarily stacking work onto SMT siblings. Cache/package locality, current placement and deterministic tie-breaking are considered where appropriate. Stronger cores can accept proportionally more runnable demand without requiring a fixed set of named core classes.
+
+Capacity affects placement and load comparison; it does not rewrite EEVDF service history or thread priority. Current instantaneous clock frequency is not treated as the permanent architectural capability of a core.
+
+NUMA support is architecturally reserved in the scheduler and memory design and can be expanded without changing the application model.
+
+8. TIMEKEEPING AND CPU STATE
+============================
+
+MUDOS_64 uses a high-resolution monotonic clock suitable for scheduler accounting, timers and application timing. The invariant TSC is preferred when cross-CPU behavior is validated as safe; platform timers are available as fallback clock sources when required.
+
+The system distinguishes wall-clock time from monotonic execution timing. Program timers therefore do not become logically longer merely because rendering or another subsystem temporarily experiences load.
+
+Extended floating-point/SIMD architectural state is isolated between threads. MUDOS_64 avoids needlessly allocating or switching large extended-state storage for threads that never use those facilities, while guaranteeing that a thread never observes residual FP/SIMD state from another thread.
+
+Power-management support includes CPU idle operation, platform power control and orderly shutdown/reboot sequencing. Hardware capability and power-management state are treated as separate concepts so temporary downclocking does not permanently redefine scheduler topology.
+
+9. VIRTUAL MEMORY
+=================
+
+MUDOS_64 uses x86-64 four-level paged virtual memory with hardware-enforced address-space isolation between Ring-3 processes and the kernel. The base page granularity is 4 KiB.
+
+Physical allocation uses a buddy-style page allocator for page-scale allocations and slab-style allocation for small kernel objects. The implementation is designed to scale across CPUs without forcing unrelated allocations through one universal global hot lock. Exact allocator layouts, bucket sizes, metadata formats and lock structures are private implementation details and are intentionally omitted here.
+
+The virtual-memory subsystem supports:
+
+- anonymous private memory;
+- per-process address spaces;
+- guard pages;
+- lazy allocation where appropriate;
+- copy-on-write behavior;
+- private and shared file-backed mappings;
+- coherent writable shared mappings where the backing filesystem can guarantee them;
+- memory priority / reclaim preference;
+- dynamic disk-backed paging for reclaimable anonymous memory;
+- controlled memory deduplication;
+- PCID/INVPCID optimization when supported by the processor.
+
+Memory protection obeys NX and strict W^X: a mapping is not simultaneously writable and executable. Executable file-backed mappings are private and non-writable.
+
+10. DYNAMIC DISK-BACKED PAGING
+==============================
+
+MUDOS_64 can use otherwise-free FACIOS storage as backing for reclaimable anonymous Ring-3 memory without creating a traditional pagefile, swap file or dedicated swap partition.
+
+Paging storage is an internal filesystem allocation class, not a user-visible file. It has no ordinary filename, directory entry or user-facing file permission and cannot be opened or manipulated through normal file APIs. This prevents the paging implementation from pretending that transient process memory is ordinary persistent data.
+
+Paging capacity is elastic. It can grow into available FACIOS space under RAM pressure and contract when persistent storage needs the space back. Persistent filesystem correctness has priority over revocable paging allocations, while live anonymous memory is never discarded merely to satisfy a file write.
+
+Paging I/O bypasses ordinary persistent-file compression and normal file journaling because process memory is not intended to survive reboot. The implementation preserves the fundamental correctness rule that a physical page is not discarded until valid backing has been established, and disk backing is not discarded while it is the only authoritative copy of live memory.
+
+Clean reconstructible file-backed pages generally do not need paging storage because they can be discarded and read again from their original file. Paging primarily targets anonymous and anonymous-derived Ring-3 memory that cannot otherwise be reconstructed.
+
+Memory priority influences reclamation preference. Lower-priority/background memory is generally preferred for reclamation ahead of elevated memory, while permanently required core system memory is protected from ordinary paging policy.
+
+11. MEMORY DEDUPLICATION
+========================
+
+MUDOS_64 includes bounded incremental memory deduplication for eligible anonymous private Ring-3 pages.
+
+Deduplication is deliberately restricted by application family: separate process instances may share an identical physical page only when the kernel considers them members of the same application identity. Pages belonging to unrelated applications are not merged merely because their bytes happen to match.
+
+Successful merges become read-only copy-on-write mappings. A later write gives the writing process its own private physical page again. Kernel pages, executable pages, device mappings, DMA/MMIO mappings, unsuitable shared mappings and other unsafe categories are excluded.
+
+The scanner is bounded and background-oriented so deduplication cannot grow into an unlimited foreground latency source. Exact scan cadence, candidate-table layout, limits, hashing strategy, TLB choreography and page-lock protocol are private implementation details and are intentionally not part of this public document.
+
+12. OUT-OF-MEMORY BEHAVIOR
+==========================
+
+MUDOS_64 treats out-of-memory handling as a forward-progress problem rather than relying on unrestricted overcommit.
+
+Critical kernel and shutdown/cleanup paths have protected emergency resources that ordinary applications and optional caches cannot consume. Under pressure, the system first reclaims disposable caches and reconstructible data, then uses paging when safely available, rejects optional/new work where necessary and can terminate a non-critical process to restore forward progress.
+
+The System process is not selected as an ordinary OOM victim. Lower-priority and background workloads are preferred over more important foreground work when process termination becomes necessary.
+
+A kernel OOM panic is reserved for cases where permanently required memory cannot be established or kernel forward progress cannot be restored even after the defined reclamation and recovery mechanisms.
+
+13. FACIOS FILESYSTEM
+=====================
+
+FACIOS stands for Fully Atomic Compressed I/O System. It is the native MUDOS_64 filesystem and is designed around atomic replacement, crash consistency, low write amplification, transparent compression, compact metadata and efficient indexed lookup.
+
+Major public properties include:
+
+- native transparent lossless compression;
+- journaling and recovery semantics;
+- bounded write batching/group commit;
+- separate volatile-visible and durably committed state;
+- generation-safe file and volume references;
+- indexed VFS lookup;
+- support for files, folders and mounted volumes;
+- Unicode/UTF-8 filenames;
+- application-aware permission metadata;
+- crash-safe handling of file replacement and metadata updates;
+- minimal rewrite of unchanged file data/metadata where possible;
+- per-volume synchronization rather than one universal filesystem lock;
+- integration with dynamic internal paging allocations;
+- caching for read/decompression and write preparation that remains reclaimable under memory pressure.
+
+A normal accepted write may become visible to subsequent reads before it has reached durable storage. Applications that require durable persistence can explicitly request synchronization. Shutdown/reboot performs the required filesystem and device flushing before power-off or restart.
+
+The native transparent compressor is named XCDA-256. XCDA-256 is a custom lossless compressor designed for FACIOS and supports independent bounded frames so compression and decompression can scale across independent regions. Its detailed match-finding, entropy coding, frame layout, thresholds, recent-offset handling and encoding state are private implementation details and are deliberately omitted from the public specification.
+
+Very small files may be stored without compression where doing so is more efficient. FACIOS changes only the data and metadata regions required by a write rather than deliberately rewriting an entire file for every modification.
+
+14. VFS, FILE IDENTITY AND PERMISSIONS
+======================================
+
+MUDOS_64 presents a shared global root directory represented as "/". The root itself is always traversable and cannot be renamed, moved or deleted. Directory enumeration is filtered according to the calling process's ability to access contained file entries.
+
+Public filesystem behavior is case-sensitive on the native MUDOS namespace. Mounted external filesystems retain their own comparison semantics.
+
+Public filesystem limits include:
+
+- UTF-8 filenames;
+- maximum filename length of 256 UTF-8 bytes excluding the terminating NUL;
+- a fixed architectural maximum of 524,288 VFS file entries in the current design.
+
+Persistent/cached file references are generation-safe. Reusing a numeric entry ID or remounting a volume cannot silently make an old asynchronous reference refer to a different object.
+
+FACIOS uses three public file permission tiers:
+
+GLOBAL
+  A global file may be accessed by ordinary .MEXE applications, .ROOT utilities and the kernel, subject to normal filesystem state and I/O rules.
+
+MEXE-private
+  A private application file is associated with a kernel-controlled application family. An ordinary .MEXE can access non-global application-private files only when its application identity matches the file's creator/application identity.
+
+ROOT-private
+  Trusted .ROOT/kernel-created private files are available to the trusted system authority rather than ordinary .MEXE applications.
+
+Directories record their creator identity. Ordinary .MEXE applications may create their own directories and manipulate directories they own, while recursive operations validate affected content rather than treating the parent directory as an unchecked authority over unrelated files.
+
+Kernel-owned direct-user-action paths allow explicit desktop/File Manager/Terminal actions initiated by the actual user to perform operations that ordinary application syscalls cannot fabricate. This prevents an arbitrary .MEXE IPC message from pretending to be a physical user action.
+
+Application-family registration can preserve a stable application identity across authorized updates, while changed executable contents are revalidated before the registered identity remains applicable.
+
+15. EXTERNAL FILESYSTEMS AND STORAGE
+====================================
+
+MUDOS_64 can mount external NTFS, FAT32 and exFAT filesystems for removable/general storage use. Their native filename-comparison semantics are respected while displayed casing is preserved.
+
+External filesystems do not natively persist FACIOS-specific application identity metadata. MUDOS_64 therefore applies mount-local permission/application metadata while those filesystems are mounted. Pre-existing ordinary files are treated conservatively as globally accessible, while files newly created by an application receive temporary ownership behavior appropriate to the creating process.
+
+Storage support includes:
+
+- SATA;
+- native NVMe over PCIe;
+- USB mass storage;
+- filesystem/storage abstraction capable of exposing multiple devices and namespaces.
+
+The native NVMe driver supports ordinary general-purpose NVM namespaces and asynchronous high-performance I/O. It supports multiple controllers/namespaces where available and integrates with interrupt routing, IOMMU protection, FACIOS durability barriers and orderly device shutdown. Optional NVMe features that are not required for general block storage are intentionally not implemented merely for specification breadth.
+
+The private NVMe queue depths, command-ID management, PRP construction, MMIO register sequencing, recovery choreography and DMA buffer layout are implementation details and are not published here.
+
+16. SECURITY AND HARDENING
+==========================
+
+MUDOS_64 emphasizes preventive isolation and validation rather than behavioral anti-virus scanning.
+
+Core software-hardening measures include:
+
+- Ring-0 / Ring-3 privilege separation;
+- a separate virtual address space for each Ring-3 process;
+- ASLR for user processes;
+- KASLR for the kernel;
+- NX on non-executable mappings;
+- strict W^X;
+- read-only kernel code and constant data after initialization where applicable;
+- SMEP and SMAP when supported;
+- non-present guard pages around protected stack boundaries;
+- stack canaries;
+- complete user-pointer/range validation at the kernel boundary;
+- checked integer arithmetic for sizes, offsets and allocation calculations;
+- strict executable/module header, section, permission and entry-point validation;
+- generation-safe kernel object handles;
+- application-aware file permissions;
+- stateful network firewalling;
+- IOMMU DMA isolation;
+- interrupt remapping when supported;
+- watchdog and kernel-panic handling for unrecoverable failures.
+
+Ordinary Ring-3 programs cannot use the public ABI to obtain raw kernel pointers, page tables, CR3, physical memory addresses, hardware PCIDs, arbitrary DMA mappings, unrestricted PCI BAR mappings, arbitrary I/O ports, arbitrary MSRs, raw interrupt registration, kernel locks, scheduler runqueues or FACIOS journal internals.
+
+Randomization facilities use platform-provided secure randomness where available during boot and expose a native secure-random interface to applications.
+
+17. DMA AND IOMMU MODEL
+=======================
+
+DMA-capable PCI devices are isolated using Intel VT-d or AMD-Vi when supported. The system creates device protection domains and maps only the buffers a device actually requires with the permissions required for that operation.
+
+PCI bus mastering remains disabled until the kernel has established the relevant protection state. During device removal, reset, shutdown or failure, DMA ownership is revoked in an order that prevents hardware from retaining access to memory that has already been returned to another subsystem.
+
+Interrupt remapping is used where supported to prevent a DMA-capable requester from freely forging interrupt destinations outside its configured entries.
+
+An unauthorized DMA event is treated as a serious integrity violation. The responsible device can be disabled, and the kernel escalates to a panic when safe continued execution cannot be guaranteed.
+
+18. NETWORKING
+==============
+
+The current native network architecture is IPv4-focused. It includes the operating-system facilities required for Ethernet networking and higher-level applications, including:
+
+- Ethernet;
+- ARP;
+- IPv4;
+- DHCP;
+- DNS;
+- TCP;
+- UDP;
+- application-facing native network operations;
+- stateful firewalling;
+- per-CPU packet processing;
+- scalable convergence of network work onto application endpoints.
+
+IPv6 is not currently advertised by the native network ABI.
+
+The firewall uses stateful connection tracking and is designed around allowing expected/reply traffic while rejecting unsolicited inbound traffic unless policy explicitly permits it. Ordinary .MEXE applications cannot disable or bypass the firewall by supplying trusted-looking packet metadata.
+
+Networking is designed to scale across multiple CPUs. Receive/transmit work, flow ownership and protocol processing are distributed without routing the complete data path through one universal global network lock. Ordering-sensitive state for one transport flow remains serialized so scaling does not corrupt TCP/UDP semantics.
+
+Scalable fan-in allows work produced by multiple CPUs to become visible through a single listener, endpoint or application wait path without generating unnecessary duplicate wakeups. Exact queue structures, flow hashes, pending-bitmaps, CPU ownership functions and wakeup algorithms are private implementation details.
+
+19. WI-FI AND BLUETOOTH
+=======================
+
+The current native Wi-Fi and Bluetooth support intentionally targets a narrow Intel device family rather than claiming generic compatibility that has not been implemented. The current target set is Intel AX200, AX201, AX210 and AX211-class hardware.
+
+Hardware coverage can expand independently of the native network/application ABI.
+
+20. GRAPHICS
+============
+
+MUDOS_64 supports three graphics paths in the current architecture:
+
+- UEFI GOP framebuffer fallback;
+- native AMD GPU support focused on RDNA 2 and RDNA 3;
+- native Intel integrated GPU support beginning with approximately 10th-generation Intel integrated graphics and extending through newer supported iGPU generations.
+
+Intel discrete GPUs are not part of the current Intel GPU target. The AMD driver intentionally implements the subset required for useful general 3D graphics rather than attempting to reproduce every optional vendor feature.
+
+When no supported native GPU path is available, the system can remain usable through the UEFI GOP framebuffer and informs the user that native acceleration is unavailable.
+
+21. MUDOS GPU API
+=================
+
+MUDOS_GPU_API_v0 is the current hardware-neutral Ring-3 accelerated graphics and compute interface. It is deliberately marked provisional: applications must check the runtime GPU API revision and may require recompilation while version 0 evolves.
+
+The public GPU model includes:
+
+- device discovery and capability reporting;
+- process-owned GPU device contexts;
+- buffers;
+- images;
+- samplers;
+- CPU-visible and device-local resource memory classes;
+- validated SPIR-V shader modules;
+- vertex, fragment and compute stages;
+- graphics pipelines;
+- compute pipelines;
+- command buffers;
+- render passes;
+- vertex/index/resource binding;
+- push constants;
+- viewport and scissor state;
+- draw and indexed-draw commands;
+- compute dispatch;
+- buffer/image copy and image blit operations;
+- explicit resource-state barriers;
+- completion fences;
+- ordered submission;
+- window swapchains and presentation.
+
+The application-facing API does not expose vendor-native command packets, raw PCI BAR mappings, physical VRAM addresses, unrestricted GPU MMIO, arbitrary DMA addresses or privileged hardware state. The driver validates public commands and translates them to the selected hardware.
+
+SPIR-V is used as the public shader representation. Only supported/validated instructions, capabilities, resource interfaces and stages are accepted. The private compiler/lowering path from validated SPIR-V to hardware-native instructions is not part of the public specification.
+
+22. DESKTOP ENVIRONMENT AND COMPOSITOR
+======================================
+
+The MUDOS_64 desktop environment uses a compact, flat Windows-style layout inspired most strongly by Windows 10 and Windows NT 4.0. It is manually drawn and intentionally avoids unnecessary animation complexity.
+
+The desktop stack includes:
+
+- desktop shell;
+- compositor;
+- dedicated window-management activity;
+- font/Unicode text engine;
+- invalidation-region based repainting;
+- taskbar and start menu;
+- draggable desktop icons;
+- file/folder interaction;
+- context menus (called Fast Menu for the desktop shell);
+- notification popup facility;
+- clipboard;
+- keyboard and mouse input;
+- windowed .MEXE/.ROOT applications.
+
+The compositor supports screen scaling, window shadows, transparency and blur. Repainting is event/invalidation driven instead of blindly redrawing the full desktop continuously when nothing has changed.
+
+Window frames expose minimize, fullscreen and close behavior. The dedicated window manager remains responsive independently of a heavily loaded application so a misbehaving Ring-3 program does not need to own the only path to its own close button.
+
+Desktop filenames are rendered beneath icons and are truncated visually when they do not fit the available slot. Opening, selecting, dragging and context-menu actions follow conventional mouse interaction.
+
+The start menu is intentionally compact. It exposes recent applications together with shutdown/reboot controls and the current MUDOS_64 version. The desktop context menu provides the normal file actions described elsewhere in this document.
+
+Current global interaction shortcuts include direct shutdown/reboot commands, a Windows-key start-menu toggle, a forced foreground-program close shortcut, double-click to open, single-click to select and right-click for the applicable context menu. These user-facing bindings may evolve without changing the kernel ABI.
+
+23. INPUT AND UNICODE
+=====================
+
+The keyboard path supports the normal keyboard key set and exposes physical key identity through a stable public input representation rather than compiler-dependent private enums. Mouse support includes ordinary buttons, wheel/motion and additional side buttons where supported.
+
+Input interrupts perform bounded event/state capture and defer UI work out of the hard interrupt path. The input system maintains authoritative key/button state so event-buffer pressure does not leave a key or mouse button permanently logically stuck.
+
+MUDOS_64 uses UTF-8 for public text and filenames. The font engine renders Unicode text and displays a replacement/missing-glyph symbol when the built-in fonts do not contain a particular valid character rather than corrupting stored text.
+
+The clipboard currently focuses on text. The system can copy text rendered through the MUDOS font engine, allowing consistent selection/copy behavior across native UI surfaces instead of requiring every small application to implement a completely separate clipboard backend.
+
+24. FILE MANAGER AND DESKTOP FILE MODEL
+=======================================
+
+The desktop itself is represented by a directory reference rather than by a separate incompatible file namespace.
+
+The default installation exposes a compact directory/application arrangement centered around Desktop, Apps and Trash Bin, with trusted system tools and ordinary applications installed as normal MUDOS executable files.
+
+File_Manager.ROOT provides a compact Windows NT 4.0-style file-management interface with disk navigation, path/address navigation, directory details, search, capacity reporting, file-type/application association information and ordinary file operations.
+
+Storage devices are identified by their actual device/volume names rather than drive letters. Opening a folder navigates File Manager to that directory. A foreign/unassociated file can be presented to the user with a list of installed applications to try opening it with.
+
+Fast Menu provides ordinary operations such as Open, Copy, Paste, Rename, New Folder, Delete and permission visibility changes where applicable. Copy creates a real independent file copy rather than a shortcut to the same file.
+
+Trash Bin exists as a desktop deletion target in addition to explicit delete operations.
+
+25. SYSTEM APPLICATIONS
+=======================
+
+The current specification includes the following principal first-party applications/utilities:
+
+File_Manager.ROOT
+  Trusted graphical file manager and storage navigator.
+
+Terminal.ROOT
+  Trusted text-based system utility interface for supported file/system operations and process inspection/control functions.
+
+Registry.ROOT
+  Trusted configuration editor for selected exposed MUDOS_64 tunables. Public configuration is separated from arbitrary kernel-memory editing.
+
+CPython.ROOT
+  Native CPython environment ported to the MUDOS_64 API/ABI.
+
+Webby.ROOT
+  Minimal native web browser targeted specifically at ChatGPT and Gmail compatibility rather than arbitrary modern websites.
+
+Task_Manager.MEXE
+  Graphical system monitor showing CPU, memory, storage, GPU, scheduler and process/thread activity.
+
+Text_Editor.MEXE
+  Native text editor integrated with the file-opening model.
+
+Calculator.MEXE
+  Advanced scientific calculator.
+
+Clock.MEXE
+  RTC-based digital clock.
+
+Pong.MEXE
+  Classic Pong game.
+
+Stress_Test.MEXE
+  System stress/benchmark utility covering CPU, memory, scheduler, synchronization, IPC and filesystem behavior.
+
+The precise UI pixel layouts, polling intervals, test kernels and benchmark formulas are not required for public architecture documentation and are omitted here.
+
+26. AUDIO AND MEDIA
+===================
+
+MUDOS_64 exposes native PCM audio to Ring-3 programs. The audio engine provides shared device output and per-application mixing rather than requiring each application to own the hardware directly.
+
+The system selects audio format capability according to the connected/selected device and uses signed PCM internally at the native system boundary. Applications can control their own stream volume through the mixer while a global system volume is also available.
+
+USB Audio is part of the current driver architecture. On a normal startup the system emits a short startup tone and then remains silent until a program or system component requests audio output.
+
+The current specification includes native/application-level support for common media formats/codecs including:
+
+Audio:
+- AAC;
+- MP3;
+- Opus;
+- Vorbis;
+- WAV;
+- FLAC.
+
+Images:
+- RAW;
+- PNG;
+- JPEG;
+- WebP.
+
+Video:
+- H.264;
+- H.265/HEVC;
+- VP9;
+- AV1.
+
+High-level codec parsing/decoding is kept outside the kernel where practical. The kernel audio boundary remains PCM-oriented rather than turning every media format into a syscall.
+
+27. WEBBY BROWSER
+=================
+
+Webby is intentionally a narrow native browser. Its primary compatibility target is using ChatGPT and Gmail, not implementing the full modern web platform.
+
+Its design includes the network and browser facilities required for those targets, including:
+
+- Ethernet/native networking;
+- DNS;
+- IPv4 TCP;
+- TLS 1.3 with certificate validation;
+- HTTP/1.1 and HTTP/2;
+- redirects and persistent connections;
+- streaming responses;
+- gzip/Brotli content compression;
+- cookies and browser caching;
+- HTML5/CSS layout and rendering needed by the target sites;
+- forms, scrolling, fonts, images and SVG;
+- an ECMAScript-compatible JavaScript engine;
+- DOM events and timers;
+- Promises and async/await;
+- modules;
+- Fetch and XMLHttpRequest;
+- WebSocket where required;
+- localStorage/sessionStorage;
+- Web Crypto;
+- history/navigation and URL handling;
+- clipboard integration;
+- file upload/download.
+
+The design deliberately omits broad web-platform features that are not required for the target sites, such as a general WebAssembly environment, WebGL, WebRTC, Service Workers and other large compatibility surfaces unless they later become necessary.
+
+Other websites may render incorrectly or fail. Webby is not currently advertised as a general replacement for Firefox, Chromium or Safari.
+
+28. NATIVE CPYTHON
+==================
+
+MUDOS_64 includes a native port of CPython 3.14.6 as CPython.ROOT. It is normal GIL-enabled 64-bit CPython rather than a reduced Python-like interpreter.
+
+The port retains the normal Python language and core CPython runtime model, including arbitrary-precision integers, floating point/complex numbers, Unicode strings, bytes/bytearray/memoryview, containers, comprehensions, generators, iterators, classes, inheritance, exceptions, context managers, coroutines, async/await, structural pattern matching, modules/packages, garbage collection, reference counting, the CPython object model, bytecode compiler/interpreter and the CPython C API to the extent supported by the MUDOS port.
+
+CPython identifies the platform as "mudos64" and is adapted directly to the native MUDOS_API_ABI_v1.1 rather than depending on Win32, pthreads or a hidden POSIX kernel ABI.
+
+The MUDOS port maps Python facilities onto native MUDOS services, including:
+
+- files and directories through the VFS;
+- native MUDOS threads and synchronization;
+- native TSS/TLS;
+- monotonic time and sleeping;
+- secure randomness;
+- anonymous and file-backed virtual memory;
+- byte-stream pipes;
+- process creation/waiting where exposed;
+- IPv4/DNS/TCP/UDP networking through MUDOS-specific Ring-3 adaptation;
+- .MLIB for compiled native extension modules.
+
+Python source files opened through the desktop/File Manager can be passed to CPython.ROOT for execution as __main__. Starting CPython.ROOT without a source file opens an interactive Python console in a normal MUDOS Unicode text window.
+
+Portable standard-library components are primarily stored as frozen modules inside the CPython application to avoid requiring a large UNIX-style directory hierarchy. Platform-specific standard-library features are adapted where MUDOS has a meaningful equivalent and can report unsupported when no corresponding operating-system service exists.
+
+Native Python extension modules use the MUDOS .MLIB mechanism and execute with the authority of the CPython.ROOT host process; such native extensions must therefore be treated as trusted code.
+
+IPv6 is not advertised by the MUDOS Python port while the native operating-system network ABI remains IPv4-only.
+
+29. PUBLIC APPLICATION API/ABI
+==============================
+
+MUDOS_64 exposes one native Ring-3 software-development interface through MUDOS_64_API_ABI.h. The current frozen non-GPU revision is MUDOS_API_ABI_v1.1, an additive extension of ABI v1.0.
+
+The ABI is designed so applications can remain modular and replaceable without recompiling Kernel.c, Scheduler.c, Drivers.c, Graphics_Drivers.c, UI.c or Assembly_Parts.S.
+
+The frozen ABI provides facilities for:
+
+- ABI discovery and feature discovery;
+- secure randomness;
+- processes and threads;
+- exit status and process waiting;
+- native TLS/TSS;
+- mutexes/events and synchronization;
+- IPC and shared pages;
+- byte-stream pipes;
+- wait-many and completion queues;
+- anonymous virtual memory;
+- file-backed mappings;
+- dynamic .MLIB modules;
+- VFS/file/directory/volume access;
+- window surfaces and UI events;
+- Unicode text;
+- clipboard;
+- PCM audio;
+- time;
+- IPv4 networking;
+- system information;
+- a deliberately small privileged .ROOT system-management set.
+
+ABI-major-1 compatibility policy is additive: existing frozen non-GPU operations keep their meaning, and later functionality is added through new feature bits, new optional/versioned structures or previously unused operation identifiers rather than silently redefining existing calls.
+
+MUDOS_GPU_API_v0 is the explicit exception because it remains provisional until promoted to a frozen GPU ABI.
+
+The machine-level private kernel implementation behind the ABI is not part of the public architecture specification. Exact public ABI layouts necessary for application binary compatibility belong in MUDOS_64_API_ABI.h rather than being duplicated throughout this public overview.
+
+30. DRIVER AND HARDWARE ARCHITECTURE
+====================================
+
+Current or architecturally defined driver areas include:
+
+- ACPI/platform discovery;
+- PCI/PCIe;
+- RTC;
+- keyboard;
+- mouse;
+- power management;
+- Ethernet;
+- Wi-Fi;
+- Bluetooth;
+- internet stack;
+- firewall;
+- per-CPU networking;
+- scalable network fan-in;
+- SATA;
+- NVMe;
+- USB core;
+- USB HID;
+- USB Audio;
+- USB Mass Storage;
+- VT-d/AMD-Vi;
+- AMD GPU;
+- Intel GPU;
+- UEFI GOP fallback.
+
+The design intentionally prefers a smaller number of well-defined native drivers over carrying broad legacy compatibility solely for historical completeness. Unsupported optional hardware mechanisms are rejected cleanly rather than guessed or interpreted through an unsafe fallback.
+
+31. SYSTEM PROCESS AND CORE SERVICES
+===================================
+
+The kernel exposes a critical System process (PID 0) containing the core operating-system execution activities. Publicly relevant logical services include:
+
+- kernel/core system activity;
+- UI;
+- compositor;
+- dedicated window management;
+- font engine;
+- audio engine;
+- memory management;
+- FACIOS compression/decompression workers.
+
+FACIOS compression/decompression work can scale with CPU availability across independent compression regions. The public specification intentionally does not expose the private worker-count formula, work ownership internals or compression-state partitioning beyond the guarantee that parallel work does not violate compression correctness.
+
+The System process is treated as indispensable. Its termination or unrecoverable corruption is a system-fatal condition rather than an ordinary application failure.
+
+32. KERNEL FAILURE HANDLING
+===========================
+
+MUDOS_64 provides a dedicated kernel panic screen for conditions in which safe continued operation is impossible. Public failure categories include:
+
+- Ring-0 execution failure;
+- total system integrity failure;
+- critical System process failure;
+- unrecoverable IOMMU/DMA violation;
+- watchdog timeout;
+- unrecoverable kernel out-of-memory failure;
+- CPU double fault.
+
+The panic interface reports the broad failure class without requiring publication of private kernel structures or addresses.
+
+The system includes a watchdog for prolonged loss of kernel responsiveness. Panic/error paths are designed to avoid depending on ordinary optional allocations that may themselves be unavailable during failure recovery.
+
+33. SHUTDOWN, REBOOT AND STORAGE INTEGRITY
+==========================================
+
+Shutdown and reboot are durable system operations, not immediate power cuts initiated while storage is still being modified.
+
+Before final power-off/restart, MUDOS_64 stops accepting new filesystem modifications, commits accepted FACIOS work according to its durability rules, drains relevant storage I/O, flushes volatile device caches where required, transitions devices out of active DMA ownership and only then invokes the platform power operation.
+
+If an individual storage device is safely ejected, the same principle applies: outstanding state must be synchronized before its mounted-volume/device identity is discarded.
+
+34. PERFORMANCE AND FOOTPRINT TARGETS
+=====================================
+
+MUDOS_64 is designed to remain compact relative to the number of facilities it provides.
+
+The current specification targets approximately 384-512 MiB or less of idle physical memory after reclaimable caches have been released and approximately 2-4 MiB or less of idle-system persistent storage footprint, excluding separately running .MEXE/.ROOT applications and user data.
+
+These values are architectural targets rather than a promise that every future build, driver combination or debugging configuration will remain byte-for-byte identical.
+
+The system avoids permanently allocating maximum-sized internal tables when only a small active portion is required. Per-CPU and per-volume designs are used where they remove unnecessary global contention. Performance work emphasizes avoiding redundant copying, unnecessary polling, unbounded scanning and needless full-file rewriting.
+
+35. TASK MANAGER AND STRESS TESTING
+===================================
+
+Task Manager exposes system behavior rather than hiding all scheduling and resource state behind a simplified activity percentage. Its design includes monitoring of CPU, physical/virtual memory, storage, GPU, scheduler load, process/thread count, migration/context-switch activity and scheduling-latency statistics.
+
+Stress_Test provides selectable tests for broad system areas such as:
+
+- combined stress;
+- CPU;
+- random memory access;
+- page-stride memory access;
+- memory allocation;
+- scheduler behavior;
+- mutex contention;
+- IPC;
+- filesystem behavior.
+
+The exact benchmark kernels, update periods, problem sizes and statistical implementation are intentionally omitted from the public specification because they are implementation/test methodology rather than requirements for third-party software compatibility.
+
+36. CONFIGURATION MODEL
+=======================
+
+Registry.ROOT exposes selected user/system tunables rather than unrestricted raw kernel-memory editing. Examples include filesystem batching policy and display configuration.
+
+Internal implementation constants that are not part of the supported configuration contract are not promised to remain stable and are deliberately absent from this public specification.
+
+Changing a supported exposed tunable should not require manually editing dependent hidden values; dependent behavior is designed to be recalculated from the exposed configuration where applicable.
+
+37. DEFAULT INSTALLATION MODEL
+==============================
+
+MUDOS_64 uses one file per ordinary executable application. Programs are normal replaceable files rather than hardcoded path-specific components compiled into the kernel.
+
+A representative default installation contains:
+
+/
+  Desktop
+  Apps
+  Trash Bin
+
+with first-party applications including File_Manager.ROOT, Terminal.ROOT, Registry.ROOT, CPython.ROOT, Webby.ROOT, Task_Manager.MEXE, Text_Editor.MEXE, Calculator.MEXE, Clock.MEXE, Pong.MEXE and Stress_Test.MEXE.
+
+Exact default placement may change between releases without changing the application ABI. The kernel does not depend on fixed hardcoded paths for ordinary .MEXE/.ROOT applications.
+
+38. PRIVACY AND TELEMETRY PHILOSOPHY
+====================================
+
+MUDOS_64 does not require privacy-invasive background services as a design dependency. The project explicitly aims to minimize unsolicited data collection and unnecessary online service coupling.
+
+A public release should document any future networked telemetry or external service dependency explicitly rather than treating it as an invisible default.
+
+39. LICENSING AND DISTRIBUTION
+==============================
+
+MUDOS_64 compiled releases are proprietary binary freeware under the MUDOS_64 Binary Freeware License supplied with the official distribution/repository.
+
+The intended public distribution model is:
+
+- compiled official releases may be used free of charge;
+- unmodified official binary releases may be redistributed subject to the license;
+- source code is not published or licensed by the binary freeware license;
+- modification, derivative distribution, source reconstruction and similar acts are restricted to the maximum extent permitted by applicable law;
+- mandatory statutory rights remain unaffected where they cannot lawfully be waived.
+
+The LICENSE file distributed with a particular release is authoritative. This public specification is descriptive and does not replace or expand the legal license grant.
+
+Third-party components, if any, remain governed by their own applicable licenses and notices where required.
+
+40. PUBLIC / PRIVATE BOUNDARY
+=============================
+
+The following categories are intentionally suitable for public documentation:
+
+- system goals and supported platform;
+- major kernel architecture;
+- Ring-0/Ring-3 trust model;
+- .MEXE/.ROOT/.MLIB concepts;
+- public permission semantics;
+- externally visible filesystem limits;
+- scheduler family and policy goals;
+- heterogeneous CPU support concept;
+- memory capabilities;
+- FACIOS high-level properties;
+- supported filesystems and hardware classes;
+- network protocols and firewall policy;
+- public application API/ABI contract;
+- supported media formats;
+- included applications;
+- CPython/Webby capability boundaries;
+- GPU API capabilities;
+- driver target families;
+- user-visible UI behavior;
+- licensing/distribution model.
+
+The following categories are intentionally private unless separately published as part of an explicit public ABI or developer interface:
+
+- kernel source code;
+- private structure layouts;
+- private object metadata layouts;
+- private lock ordering and synchronization choreography;
+- exact internal table sizes and hash organization;
+- private scheduler equations and thresholds;
+- exact load-balancing/migration formulas;
+- TLB shootdown implementation details;
+- deduplication hash/scanner implementation;
+- internal allocator metadata and free-list construction;
+- XCDA-256 encoding details and entropy/match-finding implementation;
+- exact FACIOS journal/commit write sequence and private recovery metadata;
+- internal paging-entry representation;
+- raw device queue layouts and DMA descriptor construction;
+- exact NVMe initialization/queue algorithms;
+- internal firewall/flow hash implementation;
+- private per-CPU network fan-in data structures;
+- GPU native command translation and hardware register programming;
+- private syscall dispatch structures and complete syscall-number allocation;
+- exact panic/debug internal state;
+- implementation-only tunables that are not part of the supported public contract.
+
+This distinction is deliberate. MUDOS_64 can be technically transparent about what the system does and how its architecture is organized without publishing enough implementation detail to serve as a near-source blueprint.
+
+END OF PUBLIC SPECIFICATION
+===========================
+
+MUDOS_64 v1.9.4 public-safe specification snapshot.
+For exact application-facing ABI definitions, use the separately published MUDOS_64_API_ABI.h corresponding to the release.
+For redistribution and legal permissions, use the LICENSE file accompanying the official release.
