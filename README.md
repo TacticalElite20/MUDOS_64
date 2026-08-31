@@ -28,7 +28,7 @@ CURRENT RELEASE
 
 
 
-MUDOS\_64 v1.9.4
+MUDOS\_64 v2.0.6
 
 
 
